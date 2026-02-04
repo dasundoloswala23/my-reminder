@@ -1,0 +1,35 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the resource
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Helper function to validate image file
+    function isValidImage() {
+      return request.resource.size < 10 * 1024 * 1024  // 10MB max
+          && request.resource.contentType.matches('image/.*');
+    }
+    
+    // User reminder images
+    match /users/{userId}/reminders/{reminderId}/{fileName} {
+      // Users can read their own reminder images
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can upload images to their own reminders
+      allow create: if isAuthenticated() 
+                   && isOwner(userId) 
+                   && isValidImage();
+      
+      // Users can delete their own reminder images
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "864917682311",
+    "project_id": "myreminder-93de0",
+    "storage_bucket": "myreminder-93de0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:864917682311:android:51d9698c1304e325c82022",
+        "android_client_info": {
+          "package_name": "com.myre.myreminder"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBcxxyk4iSbmqPrpnG8LoQMpLwM84LcbZo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

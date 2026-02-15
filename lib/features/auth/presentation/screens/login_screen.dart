@@ -1,17 +1,23 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../core/config/routes.dart';
+import '../providers/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isSocialLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -27,12 +33,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Implement Firebase Auth login
-      await Future.delayed(const Duration(seconds: 2));
+      await ref.read(authNotifierProvider.notifier).signIn(
+            _emailController.text.trim(),
+            _passwordController.text,
+          );
 
       if (mounted) {
-        // Navigate to home
-        // context.go(AppRoutes.home);
+        context.go(AppRoutes.home);
       }
     } catch (e) {
       if (mounted) {
@@ -47,8 +54,63 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isSocialLoading = true);
+
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithGoogle();
+
+      if (mounted) {
+        context.go(AppRoutes.home);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSocialLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isSocialLoading = true);
+
+    try {
+      await ref.read(authNotifierProvider.notifier).signInWithApple();
+
+      if (mounted) {
+        context.go(AppRoutes.home);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Apple Sign-In failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSocialLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen to auth state changes
+    ref.listen<AsyncValue<dynamic>>(authNotifierProvider, (previous, next) {
+      next.whenOrNull(
+        error: (error, _) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${error.toString()}')),
+          );
+        },
+      );
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -139,20 +201,44 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
 
                   // Login Button
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: (_isLoading || _isSocialLoading) ? null : _login,
                       child: _isLoading
                           ? const SizedBox(
-                              height: 20,
-                              width: 20,
+                              width: 24,
+                              height: 24,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Login'),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+
+                  // Divider with "or"
+                  Row(
+                    children: [
+                      Expanded(child: Divider(color: Colors.grey[400])),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'or continue with',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ),
+                      Expanded(child: Divider(color: Colors.grey[400])),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Social Sign-In Buttons
+                  if (_isSocialLoading)
+                    const Center(child: CircularProgressIndicator())
+                  else
+                    _buildSocialSignInButtons(),
+
+                  const SizedBox(height: 24),
 
                   // Register Link
                   Row(
@@ -164,8 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // TODO: Navigate to register
-                          // context.go(AppRoutes.register);
+                          context.go(AppRoutes.register);
                         },
                         child: const Text('Register'),
                       ),
@@ -177,6 +262,60 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSocialSignInButtons() {
+    // Show Google Sign-In on Android, Apple Sign-In on iOS, both on other platforms
+    final showGoogle = Platform.isAndroid || Platform.isIOS;
+    final showApple = Platform.isIOS || Platform.isMacOS;
+
+    if (!showGoogle && !showApple) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      children: [
+        // Google Sign-In Button (primarily for Android, also available on iOS)
+        if (showGoogle)
+          SizedBox(
+            height: 50,
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _signInWithGoogle,
+              icon: Image.network(
+                'https://www.google.com/favicon.ico',
+                height: 24,
+                width: 24,
+                errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.g_mobiledata, size: 24),
+              ),
+              label: const Text('Continue with Google'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.black87,
+                side: BorderSide(color: Colors.grey[300]!),
+              ),
+            ),
+          ),
+
+        if (showGoogle && showApple) const SizedBox(height: 12),
+
+        // Apple Sign-In Button (iOS and macOS only)
+        if (showApple)
+          SizedBox(
+            height: 50,
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _signInWithApple,
+              icon: const Icon(Icons.apple, size: 24),
+              label: const Text('Continue with Apple'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

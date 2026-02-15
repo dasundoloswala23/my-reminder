@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart' show Color, debugPrint;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart'
     as android_notifications;
@@ -142,6 +142,7 @@ class NotificationService {
       scheduledTime: reminder.scheduledAt,
       payload: reminder.reminderId,
       sound: reminder.alarmSound,
+      isUrgent: reminder.isUrgent,
     );
     notificationIds.add(mainId);
 
@@ -161,6 +162,7 @@ class NotificationService {
           scheduledTime: earlyTime,
           payload: reminder.reminderId,
           sound: 'default', // Use softer sound for early reminder
+          isUrgent: false, // Early reminder is not urgent by default
         );
         notificationIds.add(earlyId);
       }
@@ -177,11 +179,12 @@ class NotificationService {
     required DateTime scheduledTime,
     required String payload,
     required String sound,
+    bool isUrgent = false,
   }) async {
     // Convert to timezone-aware datetime
     final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
-    // Android notification details
+    // Android notification details - different for urgent vs normal
     final androidDetails = AndroidNotificationDetails(
       app_constants.AppConstants.notificationChannelId,
       app_constants.AppConstants.notificationChannelName,
@@ -194,9 +197,11 @@ class NotificationService {
       enableLights: true,
       color: const Color(0xFF6366F1),
       icon: '@mipmap/ic_launcher',
-      // Full-screen intent for alarm-style notification (Android)
-      fullScreenIntent: true,
-      category: AndroidNotificationCategory.alarm,
+      // Full-screen intent for urgent alarm-style notification (Android)
+      fullScreenIntent: isUrgent,
+      category: isUrgent ? AndroidNotificationCategory.alarm : AndroidNotificationCategory.reminder,
+      ongoing: isUrgent, // Keep notification until user interacts
+      autoCancel: !isUrgent,
       actions: [
         const AndroidNotificationAction(
           'complete',
@@ -219,7 +224,7 @@ class NotificationService {
       presentSound: true,
       categoryIdentifier: 'reminder_category',
       threadIdentifier: payload,
-      interruptionLevel: InterruptionLevel.critical, // iOS 15+ critical alerts
+      interruptionLevel: isUrgent ? InterruptionLevel.critical : InterruptionLevel.active,
     );
 
     final platformDetails = NotificationDetails(
@@ -317,12 +322,12 @@ class NotificationService {
 
   /// Handle notification tap (when app is in foreground/background)
   static void _onNotificationTapped(NotificationResponse response) {
-    final payload = response.payload;
-    final actionId = response.actionId;
-
-    // TODO: Handle navigation based on action
+    // Handle navigation based on action
     // Navigate to reminder detail screen with reminderId = payload
-    // print('Notification tapped: payload=$payload, action=$actionId');
+    if (response.payload != null) {
+       debugPrint('Notification tapped: payload=${response.payload}, action=${response.actionId}');
+      // TODO: Navigate to reminder detail screen
+    }
   }
 
   /// Handle notification tap (when app is terminated)

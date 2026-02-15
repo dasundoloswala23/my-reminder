@@ -22,11 +22,17 @@ dependencies:
   cloud_firestore: ^5.4.4
   firebase_storage: ^12.3.4
   
+  # Social Sign-In
+  google_sign_in: ^6.2.1
+  sign_in_with_apple: ^6.1.1
+  crypto: ^3.0.3
+
   # Local Notifications & Alarms
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
   android_alarm_manager_plus: ^4.0.4
-  
+  shared_preferences: ^2.2.2
+
   # Image Handling
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1

@@ -23,6 +23,7 @@ class ReminderModel extends ReminderEntity {
     super.subtasks,
     super.notificationIds,
     super.platformMeta,
+    super.isUrgent,
   });
 
   /// Convert from Entity
@@ -47,6 +48,7 @@ class ReminderModel extends ReminderEntity {
       subtasks: entity.subtasks,
       notificationIds: entity.notificationIds,
       platformMeta: entity.platformMeta,
+      isUrgent: entity.isUrgent,
     );
   }
 
@@ -72,6 +74,7 @@ class ReminderModel extends ReminderEntity {
       subtasks: subtasks,
       notificationIds: notificationIds,
       platformMeta: platformMeta,
+      isUrgent: isUrgent,
     );
   }
 
@@ -97,6 +100,7 @@ class ReminderModel extends ReminderEntity {
       'subtasks': subtasks.map((s) => s.toMap()).toList(),
       'notificationIds': notificationIds,
       'platformMeta': platformMeta,
+      'isUrgent': isUrgent,
     };
   }
 
@@ -134,6 +138,65 @@ class ReminderModel extends ReminderEntity {
       notificationIds:
           (map['notificationIds'] as List<dynamic>?)?.cast<int>() ?? [],
       platformMeta: map['platformMeta'] as Map<String, dynamic>?,
+      isUrgent: map['isUrgent'] as bool? ?? false,
+    );
+  }
+
+  /// Convert to local cache map (uses ISO strings instead of Timestamps)
+  Map<String, dynamic> toLocalCache() {
+    return {
+      'reminderId': reminderId,
+      'userId': userId,
+      'title': title,
+      'description': description,
+      'scheduledAt': scheduledAt.toIso8601String(),
+      'timezone': timezone,
+      'isCompleted': isCompleted,
+      'completedAt': completedAt?.toIso8601String(),
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'priority': priority,
+      'colorTag': colorTag,
+      'earlyReminderMinutes': earlyReminderMinutes,
+      'alarmSound': alarmSound,
+      'snoozeDefaultMinutes': snoozeDefaultMinutes,
+      'images': images,
+      'subtasks': subtasks.map((s) => s.toMap()).toList(),
+      'notificationIds': notificationIds,
+      'platformMeta': platformMeta,
+      'isUrgent': isUrgent,
+    };
+  }
+
+  /// Create from local cache map
+  factory ReminderModel.fromLocalCache(Map<String, dynamic> map) {
+    return ReminderModel(
+      reminderId: map['reminderId'] as String,
+      userId: map['userId'] as String? ?? '',
+      title: map['title'] as String,
+      description: map['description'] as String?,
+      scheduledAt: DateTime.parse(map['scheduledAt'] as String),
+      timezone: map['timezone'] as String,
+      isCompleted: map['isCompleted'] as bool? ?? false,
+      completedAt: map['completedAt'] != null
+          ? DateTime.parse(map['completedAt'] as String)
+          : null,
+      createdAt: DateTime.parse(map['createdAt'] as String),
+      updatedAt: DateTime.parse(map['updatedAt'] as String),
+      priority: map['priority'] as int? ?? 0,
+      colorTag: map['colorTag'] as String?,
+      earlyReminderMinutes: map['earlyReminderMinutes'] as int?,
+      alarmSound: map['alarmSound'] as String? ?? 'default',
+      snoozeDefaultMinutes: map['snoozeDefaultMinutes'] as int? ?? 10,
+      images: (map['images'] as List<dynamic>?)?.cast<String>() ?? [],
+      subtasks: (map['subtasks'] as List<dynamic>?)
+              ?.map((s) => Subtask.fromMap(s as Map<String, dynamic>))
+              .toList() ??
+          [],
+      notificationIds:
+          (map['notificationIds'] as List<dynamic>?)?.cast<int>() ?? [],
+      platformMeta: map['platformMeta'] as Map<String, dynamic>?,
+      isUrgent: map['isUrgent'] as bool? ?? false,
     );
   }
 }

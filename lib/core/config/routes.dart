@@ -5,6 +5,8 @@ import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/reminders/presentation/screens/home_screen.dart';
 import '../../features/reminders/presentation/screens/add_edit_reminder_screen.dart';
 import '../../features/reminders/presentation/screens/reminder_detail_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/settings/presentation/screens/alarm_tones_screen.dart';
 
 /// App Routes Configuration using GoRouter
 class AppRoutes {
@@ -14,6 +16,8 @@ class AppRoutes {
   static const String addReminder = '/add-reminder';
   static const String editReminder = '/edit-reminder/:id';
   static const String reminderDetail = '/reminder/:id';
+  static const String settings = '/settings';
+  static const String alarmTones = '/settings/alarm-tones';
 
   static GoRouter router = GoRouter(
     initialLocation: login,
@@ -62,6 +66,20 @@ class AppRoutes {
           final reminderId = state.pathParameters['id']!;
           return ReminderDetailScreen(reminderId: reminderId);
         },
+      ),
+
+      // Settings Route
+      GoRoute(
+        path: settings,
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Alarm Tones Route
+      GoRoute(
+        path: alarmTones,
+        name: 'alarmTones',
+        builder: (context, state) => const AlarmTonesScreen(),
       ),
     ],
 

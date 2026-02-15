@@ -65,6 +65,7 @@ class ReminderEntity extends Equatable {
   final List<Subtask> subtasks;
   final List<int> notificationIds;
   final Map<String, dynamic>? platformMeta;
+  final bool isUrgent; // true = show as alarm, false = show as notification
 
   const ReminderEntity({
     required this.reminderId,
@@ -86,6 +87,7 @@ class ReminderEntity extends Equatable {
     this.subtasks = const [],
     this.notificationIds = const [],
     this.platformMeta,
+    this.isUrgent = false,
   });
 
   ReminderEntity copyWith({
@@ -108,6 +110,7 @@ class ReminderEntity extends Equatable {
     List<Subtask>? subtasks,
     List<int>? notificationIds,
     Map<String, dynamic>? platformMeta,
+    bool? isUrgent,
   }) {
     return ReminderEntity(
       reminderId: reminderId ?? this.reminderId,
@@ -129,6 +132,7 @@ class ReminderEntity extends Equatable {
       subtasks: subtasks ?? this.subtasks,
       notificationIds: notificationIds ?? this.notificationIds,
       platformMeta: platformMeta ?? this.platformMeta,
+      isUrgent: isUrgent ?? this.isUrgent,
     );
   }
 
@@ -153,5 +157,6 @@ class ReminderEntity extends Equatable {
         subtasks,
         notificationIds,
         platformMeta,
+        isUrgent,
       ];
 }

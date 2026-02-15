@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/config/routes.dart';
 import '../../../../core/providers/theme_provider.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -47,6 +49,10 @@ class SettingsScreen extends ConsumerWidget {
 
           // Notifications Section
           _buildSectionHeader(context, 'Notifications'),
+
+          // Alarm Permission (Android 12+)
+          if (Platform.isAndroid)
+            _AlarmPermissionTile(),
 
           ListTile(
             leading: const Icon(Icons.notifications_outlined),
@@ -239,6 +245,89 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Widget to check and toggle alarm permission (Android 12+)
+class _AlarmPermissionTile extends StatefulWidget {
+  @override
+  State<_AlarmPermissionTile> createState() => _AlarmPermissionTileState();
+}
+
+class _AlarmPermissionTileState extends State<_AlarmPermissionTile> with WidgetsBindingObserver {
+  final _notificationService = NotificationService();
+  bool _canScheduleExactAlarms = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkPermission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-check permission when app resumes (user may have changed it in settings)
+    if (state == AppLifecycleState.resumed) {
+      _checkPermission();
+    }
+  }
+
+  Future<void> _checkPermission() async {
+    final canSchedule = await _notificationService.canScheduleExactAlarms();
+    if (mounted) {
+      setState(() {
+        _canScheduleExactAlarms = canSchedule;
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _openAlarmSettings() async {
+    await _notificationService.openExactAlarmSettings();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const ListTile(
+        leading: Icon(Icons.alarm),
+        title: Text('Alarm Permission'),
+        trailing: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    return ListTile(
+      leading: Icon(
+        Icons.alarm,
+        color: _canScheduleExactAlarms ? Colors.green : Colors.orange,
+      ),
+      title: const Text('Alarm Permission'),
+      subtitle: Text(
+        _canScheduleExactAlarms
+            ? 'Exact alarms are enabled'
+            : 'Tap to enable exact alarms',
+      ),
+      trailing: Switch(
+        value: _canScheduleExactAlarms,
+        onChanged: (value) async {
+          // Always open settings - user needs to manually toggle
+          await _openAlarmSettings();
+        },
+      ),
+      onTap: _openAlarmSettings,
     );
   }
 }

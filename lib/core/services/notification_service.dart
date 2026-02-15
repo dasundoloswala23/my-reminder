@@ -104,7 +104,12 @@ class NotificationService {
 
       if (androidPlugin != null) {
         // Request exact alarm permission for Android 12+
-        await androidPlugin.requestExactAlarmsPermission();
+        final exactAlarmGranted = await androidPlugin.requestExactAlarmsPermission();
+
+        // If exact alarm permission was not granted, it means user needs to manually enable it
+        if (exactAlarmGranted != true) {
+          debugPrint('Exact alarm permission not granted - user needs to enable in settings');
+        }
 
         final granted = await androidPlugin.requestNotificationsPermission();
         return granted ?? false;
@@ -127,6 +132,34 @@ class NotificationService {
       return false;
     }
     return true;
+  }
+
+  /// Check if exact alarm permission is granted (Android 12+)
+  Future<bool> canScheduleExactAlarms() async {
+    if (Platform.isAndroid) {
+      final androidPlugin =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        final canSchedule = await androidPlugin.canScheduleExactNotifications();
+        return canSchedule ?? false;
+      }
+    }
+    return true; // iOS doesn't need this permission
+  }
+
+  /// Open exact alarm settings (Android 12+)
+  Future<void> openExactAlarmSettings() async {
+    if (Platform.isAndroid) {
+      final androidPlugin =
+          _notifications.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        await androidPlugin.requestExactAlarmsPermission();
+      }
+    }
   }
 
   /// Schedule reminder notification
